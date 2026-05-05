@@ -52,21 +52,14 @@ export default function Dashboard() {
 
   return (
     <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard icon={Droplet} label="Total Supply" value={`${totalSupply} KL`} helper="Available water capacity" />
-        <StatCard icon={Waves} label="Total Demand" value={`${totalDemand} KL`} helper="Requests received today" tone="amber" />
-        <StatCard icon={AlertTriangle} label="Shortage Areas" value={shortage} helper="Needs attention" tone="red" />
-        <StatCard icon={Gauge} label="Open Issues" value={data.issues.filter((i) => i.status === 'open').length} helper="User reports" tone="green" />
-      </div>
-
+      
       {user?.role === 'admin' && <AdminDashboard data={data} reload={load} loading={loading} />}
       {user?.role === 'area_manager' && <ManagerDashboard data={data} reload={load} />}
       {user?.role === 'user' && <UserDashboard data={data} reload={load} />}
 
       <div className="grid gap-5 xl:grid-cols-[1.1fr_0.9fr]">
         <div className="panel">
-          <div className="mb-4 flex items-center gap-2">
-            <Activity className="h-5 w-5 text-cyan-600" />
+          <div className="mb-4 flex items-center gap-2">           <Activity className="h-5 w-5 text-cyan-600" />
             <h2 className="font-bold text-slate-900 dark:text-white">Live Operations</h2>
           </div>
           <AnalyticsCharts allocations={data.allocations} demands={data.demands} dashboard={data.dashboard} />

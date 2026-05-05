@@ -36,6 +36,7 @@ const register = async (req, res, next) => {
       },
     });
   } catch (err) {
+    throw err
     next(err);
   }
 };

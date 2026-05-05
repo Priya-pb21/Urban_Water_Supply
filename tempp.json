@@ -1,0 +1,25 @@
+{
+    "today": {
+        "supply": {
+            "total_supply": "0",
+            "remaining": "0"
+        },
+        "demand": {
+            "total_demand": "3600.00",
+            "requests": "3"
+        },
+        "allocation": {
+            "total_allocated": "0",
+            "shortage_areas": "0",
+            "fulfilled_areas": "0"
+        },
+        "open_issues": 2
+    },
+    "trend_7days": [
+        {
+            "date": "2026-05-04T18:30:00.000Z",
+            "allocated": "4000.00",
+            "demanded": "134323.00"
+        }
+    ]
+}

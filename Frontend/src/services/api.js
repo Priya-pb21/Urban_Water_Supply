@@ -35,8 +35,10 @@ export const authApi = {
 
 export const waterApi = {
   areas: () => api.get('/areas'),
+  allLocations: () => api.get('/areas/all'),
   mapData: () => api.get('/areas/map/data'),
   createArea: (payload) => api.post('/areas', payload),
+  addLocation: (payload) => api.post('/areas/add-location', payload),
   demand: () => api.get('/demand'),
   demandSummary: () => api.get('/demand/summary'),
   createDemand: (payload) => api.post('/demand', payload),

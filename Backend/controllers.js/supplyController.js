@@ -1,6 +1,8 @@
 const pool = require('../config/db');
 const { auditLog } = require('../middleware/audit');
 
+
+
 // GET /api/supply
 const getAllSupply = async (req, res, next) => {
   try {
