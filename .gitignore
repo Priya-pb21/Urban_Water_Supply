@@ -1,0 +1,30 @@
+# Node modules (VERY IMPORTANT)
+node_modules/
+
+# Environment variables
+.env
+
+# Logs
+logs/
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Build folders (for frontend)
+dist/
+build/
+
+# VS Code settings (optional)
+.vscode/
+
+# npm cache
+.npm
+
+# coverage
+coverage/
+
+# temp files
+*.tmp
+*.temp

@@ -1,0 +1,58 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background: #f5fbff;
+}
+
+.dark {
+  color-scheme: dark;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+@layer components {
+  .glass-card {
+    @apply border border-white/60 bg-white/[0.78] shadow-xl shadow-cyan-950/5 backdrop-blur-xl dark:border-white/10 dark:bg-slate-900/[0.72] dark:shadow-black/20;
+  }
+
+  .panel {
+    @apply rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm dark:border-white/10 dark:bg-slate-900;
+  }
+
+  .input {
+    @apply w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-800 outline-none transition focus:border-cyan-400 focus:ring-4 focus:ring-cyan-100 dark:border-white/10 dark:bg-slate-950 dark:text-white dark:focus:ring-cyan-500/10;
+  }
+
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl bg-cyan-600 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-cyan-500/20 transition hover:-translate-y-0.5 hover:bg-cyan-500 active:translate-y-0;
+  }
+
+  .btn-secondary {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition hover:-translate-y-0.5 hover:border-cyan-200 hover:text-cyan-700 dark:border-white/10 dark:bg-slate-950 dark:text-slate-200;
+  }
+}
+
+.water-particles {
+  background-image:
+    radial-gradient(circle at 10% 20%, rgba(34, 211, 238, 0.16) 0 2px, transparent 3px),
+    radial-gradient(circle at 80% 10%, rgba(14, 116, 144, 0.14) 0 3px, transparent 4px),
+    radial-gradient(circle at 30% 80%, rgba(103, 232, 249, 0.18) 0 2px, transparent 3px);
+  background-size: 150px 150px, 210px 210px, 180px 180px;
+  animation: drift 18s linear infinite;
+}
+
+@keyframes drift {
+  from { background-position: 0 0, 40px 20px, 10px 60px; }
+  to { background-position: 150px 150px, 250px 230px, 190px 240px; }
+}
