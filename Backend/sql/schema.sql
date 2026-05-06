@@ -188,6 +188,73 @@ CREATE TABLE IF NOT EXISTS audit_logs (
   created_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+
+
+-- ============================================
+-- PRIORITY TABLE (defines area type priority)
+-- ============================================
+CREATE TABLE IF NOT EXISTS area_priorities (
+  id SERIAL PRIMARY KEY,
+  area_type VARCHAR(50) NOT NULL UNIQUE,  -- 'hospital', 'fire_station', 'industry', 'residential'
+  priority_rank INT NOT NULL,             -- 1 = highest priority
+  description TEXT
+);
+
+INSERT INTO area_priorities (area_type, priority_rank, description) VALUES
+  ('hospital',      1, 'Medical facilities - critical'),
+  ('fire_station',  2, 'Emergency services'),
+  ('industry',      3, 'Industrial zones'),
+  ('residential',   4, 'Residential areas');
+
+-- ============================================
+-- CREDITS TABLE (each area has a credit score)
+-- ============================================
+-- NEW (correct type)
+CREATE TABLE IF NOT EXISTS area_credits (
+  id SERIAL PRIMARY KEY,
+  area_id UUID NOT NULL REFERENCES areas(id) ON DELETE CASCADE,
+  credits INT NOT NULL DEFAULT 50 CHECK (credits BETWEEN 10 AND 100),
+  last_updated TIMESTAMP DEFAULT NOW()
+);
+
+ALTER TABLE area_credits ADD CONSTRAINT unique_area_credits UNIQUE (area_id);
+CREATE INDEX IF NOT EXISTS idx_area_credits_area_id ON area_credits(area_id);
+
+-- Index for fast lookups
+CREATE INDEX IF NOT EXISTS idx_area_credits_area_id ON area_credits(area_id);
+
+-- ============================================
+-- Add area_type column to your areas table
+-- (if not already present)
+-- ============================================
+ALTER TABLE areas ADD COLUMN IF NOT EXISTS area_type VARCHAR(50) DEFAULT 'residential';
+ALTER TABLE areas ADD CONSTRAINT fk_area_type
+  FOREIGN KEY (area_type) REFERENCES area_priorities(area_type);
+
+-- ============================================
+-- ALLOCATION LOG TABLE (audit trail)
+-- ============================================
+CREATE TABLE IF NOT EXISTS allocation_log (
+  id SERIAL PRIMARY KEY,
+  run_at TIMESTAMP DEFAULT NOW(),
+  total_supply NUMERIC(12,2),
+  total_demand NUMERIC(12,2),
+  mode VARCHAR(20),  -- 'surplus' or 'deficit'
+  surplus_amount NUMERIC(12,2)
+);
+
+CREATE TABLE IF NOT EXISTS  allocation_log_items (
+  id SERIAL PRIMARY KEY,
+  log_id INT REFERENCES allocation_log(id) ON DELETE CASCADE,
+  area_id INT REFERENCES areas(id),
+  area_name VARCHAR(100),
+  area_type VARCHAR(50),
+  priority_rank INT,
+  credits INT,
+  demanded NUMERIC(12,2),
+  allocated NUMERIC(12,2),
+  fully_satisfied BOOLEAN
+);
 -- ============================================
 -- INDEXES FOR PERFORMANCE
 -- ============================================

@@ -22,21 +22,50 @@ export default function ManagerDashboard({ data, reload }) {
     }
   }, [data.areas, demand.area_id]);
 
-  const submitDemand = async (event) => {
-    event.preventDefault();
-    try {
-      await waterApi.createDemand({
-        ...demand,
-        quantity: Number(demand.quantity),
-        priority: Number(demand.priority),
-      });
-      toast.success('Demand saved in database');
-      setDemand((current) => ({ area_id: current.area_id, quantity: '', priority: 5, notes: '' }));
-      await reload();
-    } catch (err) {
-      toast.error(err.response?.data?.message || 'Demand submission failed');
+const submitDemand = async (event) => {
+  event.preventDefault();
+
+  const requestedQty = Number(demand.quantity);
+
+  try {
+    // 1. Fetch latest total demand
+    const response = await waterApi.getTotalDemand(); // calls /api/demand/getdemand
+    const data = response.data.data;
+
+    const totalDemand = data.total_demand;
+    const totalSupply = 750000; // or fetch from API if available
+
+    const remaining = totalSupply - totalDemand;
+
+    // 2. Validate
+    if (requestedQty > remaining) {
+      toast.error(`Only ${remaining} KL is remaining`);
+      return;
     }
-  };
+
+    // 3. Proceed if valid
+    await waterApi.createDemand({
+      ...demand,
+      quantity: requestedQty,
+      priority: Number(demand.priority),
+    });
+
+    toast.success('Demand saved in database');
+
+    setDemand((current) => ({
+      area_id: current.area_id,
+      quantity: '',
+      priority: 5,
+      notes: '',
+    }));
+
+    await reload();
+
+  } catch (err) {
+    console.error('Error submitting demand:', err);
+    toast.error(err.response?.data?.message || 'Demand submission failed');
+  }
+};
 
   return (
     <motion.div

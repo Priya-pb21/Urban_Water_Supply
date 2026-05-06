@@ -199,19 +199,25 @@ export default function Dashboard() {
   const [conflicts, setConflicts] = useState([]);
   const [stats, setStats] = useState({
     totalSupply: 72000,
-    totalDemand: 134323,
+    totalDemand: 0,
     shortageAreas: 3,
     openIssues: 17,
     activeAreas: 7,
   });
 
+  const [totSupply, setTotSupply] = useState(750000);
+
   useEffect(() => {
       waterApi.dashboard()
         .then(response => {
-          // Accessing data based on your specific nesting: data.data.data
-          const data = response.data.data; 
+          const data = response.data.data;
+          console.log(data)
+        const demandVal = data.today.demand.total_demand;
+        const baseSupply = totSupply
+          console.log(data.today.supply.total_supply)
+          setTotSupply(baseSupply - demandVal);
           setStats({
-            totalSupply: data.today.supply.total_supply,
+            totalSupply: totSupply,
             totalDemand: data.today.demand.total_demand,
             shortageAreas: data.today.allocation.shortage_areas,
             openIssues: data.today.open_issues,
@@ -221,9 +227,13 @@ export default function Dashboard() {
         .catch(err => console.error("Failed to fetch stats:", err));
     }, []); // Empty array means "run once on mount"
 
-
-  const efficiency = ((stats.totalSupply / stats.totalDemand) * 100).toFixed(1);
-  const deficit = stats.totalDemand - stats.totalSupply;
+    
+const isDeficit = stats.totalDemand > totSupply;
+const difference = Math.abs(totSupply - stats.totalDemand);
+const efficiency = stats.totalDemand > 0
+  ? ((totSupply / stats.totalDemand) * 100).toFixed(1)
+  : "0.0";
+const deficit = stats.totalDemand - totSupply;
 
   // Load conflict pins from localStorage (set by Map page)
   useEffect(() => {
@@ -276,23 +286,75 @@ export default function Dashboard() {
         {/* ══════════════════════════════
             ROW 1 — 6 STAT CARDS
         ══════════════════════════════ */}
+        {/* ══════════════════════════════
+            SURPLUS / DEFICIT BANNER
+        ══════════════════════════════ */}
+        <div style={{
+          marginBottom: 24,
+          padding: "14px 20px",
+          borderRadius: 16,
+          display: "flex",
+          alignItems: "center",
+          gap: 14,
+          background: isDeficit
+            ? `linear-gradient(135deg, ${C.rose}12, ${C.amber}10)`
+            : `linear-gradient(135deg, ${C.emerald}12, ${C.teal}10)`,
+          border: `1.5px solid ${isDeficit ? C.rose : C.emerald}44`,
+          boxShadow: `0 4px 16px ${isDeficit ? C.rose : C.emerald}14`,
+          animation: "fadeUp 0.5s ease 0.05s both",
+        }}>
+          {/* Icon */}
+          <div style={{
+            width: 44, height: 44, borderRadius: 12, flexShrink: 0,
+            background: isDeficit ? `${C.rose}18` : `${C.emerald}18`,
+            display: "flex", alignItems: "center", justifyContent: "center",
+            fontSize: 22,
+          }}>
+            {isDeficit ? "⚠️" : "✅"}
+          </div>
+
+          {/* Text */}
+          <div style={{ flex: 1 }}>
+            <p style={{ margin: 0, fontSize: 14, fontWeight: 800, color: isDeficit ? C.rose : C.emerald }}>
+              {isDeficit ? "Deficit Mode — Priority & Credits Allocation Active" : "Surplus Mode — All Demands Will Be Fully Met"}
+            </p>
+            <p style={{ margin: "3px 0 0", fontSize: 12, color: C.slate }}>
+              {isDeficit
+                ? `Demand exceeds supply by ${difference.toLocaleString()} KL. Water will be distributed based on area priority rank and credit score (10–100).`
+                : `Supply exceeds demand by ${difference.toLocaleString()} KL. Every area receives 100% of its requested allocation.`
+              }
+            </p>
+          </div>
+
+          {/* Right badge */}
+          <div style={{
+            padding: "6px 14px", borderRadius: 99, flexShrink: 0,
+            background: isDeficit ? `${C.rose}18` : `${C.emerald}18`,
+            border: `1px solid ${isDeficit ? C.rose : C.emerald}44`,
+          }}>
+            <span style={{ fontSize: 13, fontWeight: 800, color: isDeficit ? C.rose : C.emerald }}>
+              {isDeficit ? `−${difference.toLocaleString()} KL` : `+${difference.toLocaleString()} KL`}
+            </span>
+          </div>
+        </div>
+
+        {/* ══════════════════════════════
+            ROW 2 — SUPPLY vs DEMAND (wide) + PRIORITY PIE
+        ══════════════════════════════ */}
+
         <div style={{
           display: "grid",
           gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
           gap: 16,
           marginBottom: 24,
         }}>
-          <StatCard icon="💧" label="Total Supply"       value={stats.totalSupply}  unit="KL"  sub="Available today"          color={C.teal}    delay={0} />
+          <StatCard icon="💧" label="Total Supply"       value={totSupply}  unit="KL"  sub="Available today"          color={C.teal}    delay={0} />
           <StatCard icon="📊" label="Total Demand"       value={stats.totalDemand}  unit="KL"  sub="Requests received"         color={C.amber}   delay={80} />
           <StatCard icon="⚠️" label="Shortage Areas"     value={stats.shortageAreas} unit=""   sub="Need attention"            color={C.rose}    delay={160} pulse={stats.shortageAreas > 0} />
           <StatCard icon="🔧" label="Open Issues"        value={stats.openIssues}    unit=""   sub="User reports"              color={C.violet}  delay={240} />
           {/* <StatCard icon="📍" label="Active Areas"       value={stats.activeAreas}   unit=""   sub="Monitored zones"           color={C.emerald} delay={320} /> */}
-          <StatCard icon="⚡" label="Allocation Efficiency" value={`${efficiency}%`} unit=""   sub={`Deficit: ${deficit.toLocaleString()} KL`} color={C.sky} delay={400} />
-        </div>
+          <StatCard icon="⚡" label="Allocation Efficiency" value={`${efficiency}%`} unit=""   sub={isDeficit ? `Deficit: ${difference.toLocaleString()} KL` : `Surplus: ${difference.toLocaleString()} KL`} color={isDeficit ? C.rose : C.emerald} delay={400} />        </div>
 
-        {/* ══════════════════════════════
-            ROW 2 — SUPPLY vs DEMAND (wide) + PRIORITY PIE
-        ══════════════════════════════ */}
         <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 16, marginBottom: 24 }}>
           {/* Supply vs Demand Area Chart */}
           <ChartCard style={{ animation: "fadeUp 0.5s ease 0.1s both" }}>

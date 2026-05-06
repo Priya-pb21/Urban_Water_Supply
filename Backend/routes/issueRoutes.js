@@ -1,33 +1,41 @@
-const express = require('express');
-const { body } = require('express-validator');
-const issueController = require('../controllers.js/issueController');
-const { authenticate, authorize } = require('../middleware/auth');
-const { validate } = require('../middleware/validate');
+import express from 'express';
+import { body } from 'express-validator';
+
+// controllers
+import {getAllIssues, getIssueById, createIssue, updateIssue, deleteIssue} from '../controllers/issueController.js';
+
+// middleware
+import { authenticate, authorize } from '../middleware/auth.js';
+import { validate } from '../middleware/validate.js';
 
 const router = express.Router();
 
-router.get('/', authenticate, issueController.getAllIssues);
+router.get('/', authenticate, getAllIssues);
+router.get('/:id', authenticate, getIssueById);
 
 router.post(
   '/',
   authenticate,
   [
-    body('area_id').isUUID().withMessage('Valid area_id is required'),
-    body('issue_type').isIn(['no_supply', 'leakage', 'water_breakout', 'contamination', 'low_pressure', 'other']).withMessage('Invalid issue type'),
+    body('title').trim().notEmpty().withMessage('Title is required'),
     body('description').trim().notEmpty().withMessage('Description is required'),
-    body('severity').optional().isIn(['low', 'medium', 'high', 'critical']).withMessage('Invalid severity'),
   ],
   validate,
-  issueController.createIssue
+  createIssue
 );
 
-router.patch(
-  '/:id/status',
+router.put(
+  '/:id',
   authenticate,
-  authorize('admin', 'area_manager'),
-  [body('status').isIn(['open', 'in_progress', 'resolved', 'closed']).withMessage('Invalid status')],
-  validate,
-  issueController.updateIssueStatus
+  authorize('admin'),
+  updateIssue
 );
 
-module.exports = router;
+router.delete(
+  '/:id',
+  authenticate,
+  authorize('admin'),
+  deleteIssue
+);
+
+export default router;

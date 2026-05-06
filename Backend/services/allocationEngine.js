@@ -204,4 +204,4 @@ function buildSummary(totalSupply, totalDemand, allocations) {
   };
 }
 
-module.exports = { allocateWater };
+export { allocateWater };

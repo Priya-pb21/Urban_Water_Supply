@@ -1,15 +1,19 @@
-const express = require('express');
-const { body } = require('express-validator');
-const areaController = require('../controllers.js/areaController');
-const { authenticate, authorize } = require('../middleware/auth');
-const { validate } = require('../middleware/validate');
+import express from 'express';
+import { body } from 'express-validator';
+
+// ✅ Import ALL controller functions properly
+import * as areaController from '../controllers/areaController.js';
+
+// ✅ Convert require → import
+import { authenticate, authorize } from '../middleware/auth.js';
+import { validate } from '../middleware/validate.js';
 
 const router = express.Router();
 
 router.get('/', authenticate, areaController.getAllAreas);
 router.get('/all', authenticate, areaController.getAllLocations);
 router.get('/map/data', authenticate, areaController.getMapData);
-router.get('/:id', authenticate, areaController.getAreaById);
+router.get('/get-area/:id', authenticate, areaController.getAreaById);
 
 router.post(
   '/add-location',
@@ -43,4 +47,4 @@ router.post(
 router.put('/:id', authenticate, authorize('admin'), areaController.updateArea);
 router.delete('/:id', authenticate, authorize('admin'), areaController.deleteArea);
 
-module.exports = router;
+export default router;

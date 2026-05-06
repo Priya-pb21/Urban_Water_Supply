@@ -42,6 +42,7 @@ export const waterApi = {
   demand: () => api.get('/demand'),
   demandSummary: () => api.get('/demand/summary'),
   createDemand: (payload) => api.post('/demand', payload),
+  getTotalDemand: () => api.get('/demand/getdemand'),
   supply: () => api.get('/supply'),
   todaySupply: () => api.get('/supply/today'),
   createSupply: (payload) => api.post('/supply', payload),
@@ -53,7 +54,12 @@ export const waterApi = {
   updateIssue: (id, payload) => api.patch(`/issues/${id}/status`, payload),
   notifications: () => api.get('/notifications'),
   markNotificationRead: (id) => api.put(`/notifications/${id}/read`),
-  chatbot: (payload) => api.post('/chatbot', payload)
+  chatbot: (payload) => api.post('/chatbot', payload),
+  // Add inside waterApi: {}
+credits: () => api.get('/credits'),
+updateCredits: (areaId, payload) => api.put(`/credits/${areaId}`, payload),
+priorities: () => api.get('/priorities'),  // optional read-only endpoint
+allocationLog: () => api.get('/allocation/log'),
 };
 
 export default api;

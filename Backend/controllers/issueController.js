@@ -1,6 +1,6 @@
-const pool = require('../config/db');
-const { auditLog } = require('../middleware/audit');
-const { notifyIssueCreated } = require('../services/notificationService');
+import pool from '../config/db.js';
+import { auditLog } from '../middleware/audit.js';
+import { notifyIssueCreated } from '../services/notificationService.js'; // ← fixed: named import
 
 const getAllIssues = async (req, res, next) => {
   try {
@@ -17,9 +17,9 @@ const getAllIssues = async (req, res, next) => {
     const params = [];
     let idx = 1;
 
-    if (status) { query += ` AND ir.status = $${idx++}`; params.push(status); }
-    if (area_id) { query += ` AND ir.area_id = $${idx++}`; params.push(area_id); }
-    if (severity) { query += ` AND ir.severity = $${idx++}`; params.push(severity); }
+    if (status)  { query += ` AND ir.status = $${idx++}`;   params.push(status); }
+    if (area_id) { query += ` AND ir.area_id = $${idx++}`;  params.push(area_id); }
+    if (severity){ query += ` AND ir.severity = $${idx++}`; params.push(severity); }
 
     if (req.user.role === 'area_manager') {
       query += ` AND a.manager_id = $${idx++}`;
@@ -30,6 +30,33 @@ const getAllIssues = async (req, res, next) => {
 
     const result = await pool.query(query, params);
     res.json({ success: true, data: result.rows });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// ── ADDED ──────────────────────────────────────────────────────
+const getIssueById = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+
+    const result = await pool.query(
+      `SELECT ir.*, a.name AS area_name, a.latitude, a.longitude,
+              reporter.name AS reported_by_name,
+              resolver.name AS resolved_by_name
+       FROM issue_reports ir
+       JOIN areas a ON ir.area_id = a.id
+       LEFT JOIN users reporter ON ir.reported_by = reporter.id
+       LEFT JOIN users resolver ON ir.resolved_by = resolver.id
+       WHERE ir.id = $1`,
+      [id]
+    );
+
+    if (!result.rows[0]) {
+      return res.status(404).json({ success: false, message: 'Issue not found' });
+    }
+
+    res.json({ success: true, data: result.rows[0] });
   } catch (err) {
     next(err);
   }
@@ -56,7 +83,7 @@ const createIssue = async (req, res, next) => {
 
     await auditLog('CREATE_ISSUE', 'issue_reports', result.rows[0].id, req.user.id, null, result.rows[0], req.ip);
 
-    const notifications = await notifyIssueCreated(
+    const notifications = await notifyIssueCreated(  // ← fixed: call directly
       area_id,
       areaCheck.rows[0].name,
       issue_type,
@@ -74,7 +101,8 @@ const createIssue = async (req, res, next) => {
   }
 };
 
-const updateIssueStatus = async (req, res, next) => {
+// ── ADDED (renamed from updateIssueStatus → updateIssue to match route) ───
+const updateIssue = async (req, res, next) => {
   try {
     const { id } = req.params;
     const { status } = req.body;
@@ -101,4 +129,24 @@ const updateIssueStatus = async (req, res, next) => {
   }
 };
 
-module.exports = { getAllIssues, createIssue, updateIssueStatus };
+// ── ADDED ──────────────────────────────────────────────────────
+const deleteIssue = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+
+    const old = await pool.query('SELECT * FROM issue_reports WHERE id = $1', [id]);
+    if (!old.rows[0]) {
+      return res.status(404).json({ success: false, message: 'Issue not found' });
+    }
+
+    await pool.query('DELETE FROM issue_reports WHERE id = $1', [id]);
+
+    await auditLog('DELETE_ISSUE', 'issue_reports', id, req.user.id, old.rows[0], null, req.ip);
+
+    res.json({ success: true, message: 'Issue deleted successfully' });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export { getAllIssues, getIssueById, createIssue, updateIssue, deleteIssue };

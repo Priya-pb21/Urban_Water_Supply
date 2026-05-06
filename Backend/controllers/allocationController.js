@@ -1,6 +1,6 @@
-const pool = require('../config/db');
-const { allocateWater } = require('../services/allocationEngine');
-const { auditLog } = require('../middleware/audit');
+import pool from '../config/db.js';
+import { allocateWater } from '../services/allocationEngine.js';
+import { auditLog } from '../middleware/audit.js';
 
 // POST /api/allocation/run (admin only)
 // Runs the allocation engine for a given supply and date
@@ -184,4 +184,4 @@ const getAreaHistory = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
-module.exports = { runAllocation, getAllAllocations, getDashboard, getAreaHistory };
+export { runAllocation, getAllAllocations, getDashboard, getAreaHistory };

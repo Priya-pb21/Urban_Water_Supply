@@ -1,5 +1,5 @@
-const pool = require('../config/db');
-const { emitToUser } = require('./socketService');
+import pool from '../config/db.js';
+import { emitToUser } from './socketService.js';
 
 async function createNotification(userId, title, message, type = 'alert') {
   if (!userId) {
@@ -67,7 +67,7 @@ async function notifyIssueCreated(areaId, areaName, issueType, severity) {
   };
 }
 
-module.exports = {
+export  {
   createNotification,
   notifyAdmins,
   notifyAreaManager,

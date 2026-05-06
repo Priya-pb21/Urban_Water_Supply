@@ -1,5 +1,5 @@
-const pool = require('../config/db');
-const { auditLog } = require('../middleware/audit');
+import pool from '../config/db.js';
+import { auditLog } from '../middleware/audit.js';
 
 // GET /api/demand
 const getAllDemand = async (req, res, next) => {
@@ -101,4 +101,4 @@ const getDemandSummary = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
-module.exports = { getAllDemand, createDemand, updateDemand, getDemandSummary };
+export { getAllDemand, createDemand, updateDemand, getDemandSummary };
