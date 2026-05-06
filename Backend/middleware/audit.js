@@ -1,5 +1,4 @@
-const pool = require('../config/db');
-
+import pool from '../config/db.js';
 const auditLog = async (action, entity, entityId, performedBy, oldData, newData, ipAddress) => {
   try {
     await pool.query(
@@ -13,4 +12,4 @@ const auditLog = async (action, entity, entityId, performedBy, oldData, newData,
   }
 };
 
-module.exports = { auditLog };
+export { auditLog };

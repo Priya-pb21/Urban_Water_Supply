@@ -1,8 +1,12 @@
-const express = require('express');
-const { body } = require('express-validator');
-const supplyController = require('../controllers.js/supplyController');
-const { authenticate, authorize } = require('../middleware/auth');
-const { validate } = require('../middleware/validate');
+import express from 'express';
+import { body } from 'express-validator';
+
+// import controller functions
+import * as supplyController from '../controllers/supplyController.js';
+
+// middleware
+import { authenticate, authorize } from '../middleware/auth.js';
+import { validate } from '../middleware/validate.js';
 
 const router = express.Router();
 
@@ -14,13 +18,22 @@ router.post(
   authenticate,
   authorize('admin'),
   [
-    body('total_water').isFloat({ gt: 0 }).withMessage('Total water must be greater than 0'),
-    body('time_slot').isIn(['morning', 'afternoon', 'evening', 'night', 'all_day']).withMessage('Invalid time slot'),
+    body('total_water')
+      .isFloat({ gt: 0 })
+      .withMessage('Total water must be greater than 0'),
+    body('time_slot')
+      .isIn(['morning', 'afternoon', 'evening', 'night', 'all_day'])
+      .withMessage('Invalid time slot'),
   ],
   validate,
   supplyController.createSupply
 );
 
-router.put('/:id', authenticate, authorize('admin'), supplyController.updateSupply);
+router.put(
+  '/:id',
+  authenticate,
+  authorize('admin'),
+  supplyController.updateSupply
+);
 
-module.exports = router;
+export default router;

@@ -1,5 +1,4 @@
-const pool = require('../config/db');
-
+import pool from '../config/db.js';
 const fallbackUser = {
   id: null,
   name: 'Guest User',
@@ -48,4 +47,4 @@ const authorize = (...roles) => {
   };
 };
 
-module.exports = { authenticate, authorize };
+export { authenticate, authorize };

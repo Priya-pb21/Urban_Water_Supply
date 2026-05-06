@@ -1,4 +1,4 @@
-const pool = require('../config/db');
+import pool from '../config/db.js';
 
 const getMyNotifications = async (req, res, next) => {
   try {
@@ -46,4 +46,4 @@ const markNotificationAsRead = async (req, res, next) => {
   }
 };
 
-module.exports = { getMyNotifications, markNotificationAsRead };
+export { getMyNotifications, markNotificationAsRead };

@@ -1,24 +1,31 @@
-const path = require('path');
-require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
-require('dotenv').config();
+import path from 'path';
+import { fileURLToPath } from 'url';
+import dotenv from 'dotenv';
 
-const http = require('http');
-const express = require('express');
-const cors = require('cors');
-const { Server } = require('socket.io');
-const pool = require('./config/db');
-const logger = require('./config/logger');
-const { errorHandler, notFound } = require('./middleware/errorHandler');
-const { initSocket } = require('./services/socketService');
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
-const authRoutes = require('./routes/authRoutes');
-const areaRoutes = require('./routes/areaRoutes');
-const demandRoutes = require('./routes/demandRoutes');
-const supplyRoutes = require('./routes/supplyRoutes');
-const allocationRoutes = require('./routes/allocationRoutes');
-const issueRoutes = require('./routes/issueRoutes');
-const chatbotRoutes = require('./routes/chatbotRoutes');
-const notificationRoutes = require('./routes/notificationRoutes');
+dotenv.config({ path: path.resolve(__dirname, '../.env') });
+dotenv.config();
+
+import http from 'http';
+import express from 'express';
+import cors from 'cors';
+import { Server } from 'socket.io';
+import pool from './config/db.js';
+import logger from './config/logger.js';
+import { errorHandler, notFound } from './middleware/errorHandler.js';
+import { initSocket } from './services/socketService.js';
+
+import authRoutes from './routes/authRoutes.js';
+import areaRoutes from './routes/areaRoutes.js';
+import demandRoutes from './routes/demandRoutes.js';
+import supplyRoutes from './routes/supplyRoutes.js';
+import allocationRoutes from './routes/allocationRoutes.js';
+import issueRoutes from './routes/issueRoutes.js';
+import chatbotRoutes from './routes/chatbotRoutes.js';
+import notificationRoutes from './routes/notificationRoutes.js';
+import creditsRouter from './routes/credits.js';
 
 const app = express();
 const server = http.createServer(app);
@@ -91,6 +98,7 @@ app.use('/api/allocation', allocationRoutes);
 app.use('/api/issues', issueRoutes);
 app.use('/api/chatbot', chatbotRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/credits', creditsRouter);
 
 app.use(notFound);
 app.use(errorHandler);

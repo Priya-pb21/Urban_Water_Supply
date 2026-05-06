@@ -1,5 +1,5 @@
-const OpenAI = require('openai');
-const pool = require('../config/db');
+import OpenAI from 'openai';
+import pool from '../config/db.js';
 
 const LANGUAGE_NAMES = {
   en: 'English',
@@ -284,4 +284,4 @@ const chat = async (req, res, next) => {
   }
 };
 
-module.exports = { chat };
+export { chat };

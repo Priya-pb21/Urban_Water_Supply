@@ -1,6 +1,6 @@
-const pool = require('../config/db');
-const { allocateWater } = require('../services/allocationEngine');
-const { auditLog } = require('../middleware/audit');
+import pool from '../config/db.js';
+import { allocateWater } from '../services/allocationEngine.js';
+import { auditLog } from '../middleware/audit.js';
 
 // POST /api/allocation/run (admin only)
 // Runs the allocation engine for a given supply and date
@@ -24,14 +24,14 @@ const runAllocation = async (req, res, next) => {
       SELECT d.*, a.name AS area_name, a.area_type
       FROM demand d
       JOIN areas a ON d.area_id = a.id
-      WHERE d.status = 'pending'
+      WHERE d.status = 'approved'
         AND DATE(d.timestamp) = $1
         AND a.is_active = TRUE
       ORDER BY d.priority DESC
     `, [date || supply.date]);
 
     if (!demandResult.rows.length) {
-      return res.status(400).json({ success: false, message: 'No pending demands found for this date' });
+      return res.status(400).json({ success: false, message: 'No approved demands found for this date' });
     }
 
     // 3. Run the allocation engine
@@ -134,7 +134,9 @@ const getDashboard = async (req, res, next) => {
                   FROM supply WHERE date = CURRENT_DATE`),
       pool.query(`SELECT COALESCE(SUM(quantity),0) AS total_demand,
                          COUNT(*) AS requests
-                  FROM demand WHERE DATE(timestamp) = CURRENT_DATE`),
+                  FROM demand
+                  WHERE DATE(timestamp) = CURRENT_DATE
+                    AND status IN ('approved', 'fulfilled', 'partial')`),
       pool.query(`SELECT COALESCE(SUM(allocated_water),0) AS total_allocated,
                          COUNT(CASE WHEN status='shortage' THEN 1 END) AS shortage_areas,
                          COUNT(CASE WHEN status='fulfilled' THEN 1 END) AS fulfilled_areas
@@ -184,4 +186,18 @@ const getAreaHistory = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
-module.exports = { runAllocation, getAllAllocations, getDashboard, getAreaHistory };
+const getAllocationLog = async (req, res, next) => {
+  try {
+    const result = await pool.query(`
+      SELECT *
+      FROM allocation_log
+      ORDER BY run_at DESC
+      LIMIT 50
+    `);
+    res.json({ success: true, data: result.rows });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export { runAllocation, getAllAllocations, getDashboard, getAreaHistory, getAllocationLog };

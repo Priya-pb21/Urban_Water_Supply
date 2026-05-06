@@ -1,9 +1,14 @@
-const fs = require('fs');
-const path = require('path');
-const { Client } = require('pg');
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import dotenv from 'dotenv';
+import pg from 'pg';
 
-require('dotenv').config({ path: path.resolve(__dirname, '../../.env') });
-require('dotenv').config();
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const { Client } = pg;
+
+dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 
 const dbConfig = {
   host: process.env.DB_HOST || 'localhost',
@@ -13,6 +18,12 @@ const dbConfig = {
 };
 
 const database = process.env.DB_NAME || 'water_supply_db';
+const databaseUrlConfig = process.env.DATABASE_URL
+  ? {
+      connectionString: process.env.DATABASE_URL,
+      ssl: { rejectUnauthorized: false },
+    }
+  : null;
 
 function quoteIdentifier(identifier) {
   if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(identifier)) {
@@ -22,6 +33,10 @@ function quoteIdentifier(identifier) {
 }
 
 async function ensureDatabase() {
+  if (databaseUrlConfig) {
+    return;
+  }
+
   const client = new Client({ ...dbConfig, database: 'postgres' });
   await client.connect();
 
@@ -37,7 +52,7 @@ async function ensureDatabase() {
 }
 
 async function applySchema() {
-  const client = new Client({ ...dbConfig, database });
+  const client = new Client(databaseUrlConfig || { ...dbConfig, database });
   await client.connect();
 
   try {

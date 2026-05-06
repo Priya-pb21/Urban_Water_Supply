@@ -1,6 +1,6 @@
-const pool = require('../config/db');
-const { auditLog } = require('../middleware/audit');
-const { notifyIssueCreated } = require('../services/notificationService');
+import pool from '../config/db.js';
+import { auditLog } from '../middleware/audit.js';
+import * as notificationService from '../services/notificationService.js';
 
 const getAllIssues = async (req, res, next) => {
   try {
@@ -56,7 +56,7 @@ const createIssue = async (req, res, next) => {
 
     await auditLog('CREATE_ISSUE', 'issue_reports', result.rows[0].id, req.user.id, null, result.rows[0], req.ip);
 
-    const notifications = await notifyIssueCreated(
+    const notifications = await notificationService.notifyIssueCreated(
       area_id,
       areaCheck.rows[0].name,
       issue_type,
@@ -69,6 +69,30 @@ const createIssue = async (req, res, next) => {
       data: result.rows[0],
       notifications,
     });
+  } catch (err) {
+    next(err);
+  }
+};
+
+const getIssueById = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const result = await pool.query(
+      `SELECT ir.*, a.name AS area_name, a.latitude, a.longitude,
+              reporter.name AS reported_by_name, resolver.name AS resolved_by_name
+       FROM issue_reports ir
+       JOIN areas a ON ir.area_id = a.id
+       LEFT JOIN users reporter ON ir.reported_by = reporter.id
+       LEFT JOIN users resolver ON ir.resolved_by = resolver.id
+       WHERE ir.id = $1`,
+      [id]
+    );
+
+    if (!result.rows[0]) {
+      return res.status(404).json({ success: false, message: 'Issue not found' });
+    }
+
+    res.json({ success: true, data: result.rows[0] });
   } catch (err) {
     next(err);
   }
@@ -101,4 +125,57 @@ const updateIssueStatus = async (req, res, next) => {
   }
 };
 
-module.exports = { getAllIssues, createIssue, updateIssueStatus };
+const updateIssue = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { issue_type, description, severity, status } = req.body;
+
+    const old = await pool.query('SELECT * FROM issue_reports WHERE id = $1', [id]);
+    if (!old.rows[0]) {
+      return res.status(404).json({ success: false, message: 'Issue not found' });
+    }
+
+    const result = await pool.query(
+      `UPDATE issue_reports
+       SET issue_type = COALESCE($1, issue_type),
+           description = COALESCE($2, description),
+           severity = COALESCE($3, severity),
+           status = COALESCE($4, status),
+           resolved_by = CASE WHEN $4 IN ('resolved', 'closed') THEN $5 ELSE resolved_by END,
+           resolved_at = CASE WHEN $4 IN ('resolved', 'closed') THEN CURRENT_TIMESTAMP ELSE resolved_at END
+       WHERE id = $6
+       RETURNING *`,
+      [issue_type, description, severity, status, req.user.id, id]
+    );
+
+    await auditLog('UPDATE_ISSUE', 'issue_reports', id, req.user.id, old.rows[0], result.rows[0], req.ip);
+    res.json({ success: true, message: 'Issue updated', data: result.rows[0] });
+  } catch (err) {
+    next(err);
+  }
+};
+
+const deleteIssue = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const old = await pool.query('SELECT * FROM issue_reports WHERE id = $1', [id]);
+    if (!old.rows[0]) {
+      return res.status(404).json({ success: false, message: 'Issue not found' });
+    }
+
+    await pool.query('DELETE FROM issue_reports WHERE id = $1', [id]);
+    await auditLog('DELETE_ISSUE', 'issue_reports', id, req.user.id, old.rows[0], null, req.ip);
+    res.json({ success: true, message: 'Issue deleted' });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export {
+  getAllIssues,
+  getIssueById,
+  createIssue,
+  updateIssueStatus,
+  updateIssue,
+  deleteIssue,
+};

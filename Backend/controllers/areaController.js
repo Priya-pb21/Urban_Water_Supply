@@ -1,5 +1,5 @@
-const pool = require('../config/db');
-const { auditLog } = require('../middleware/audit');
+import pool from '../config/db.js';
+import { auditLog } from '../middleware/audit.js';
 
 const PRIORITY_TO_NUMBER = {
   high: 9,
@@ -191,7 +191,7 @@ const getMapData = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
-module.exports = {
+export {
   getAllAreas,
   getAllLocations,
   getAreaById,

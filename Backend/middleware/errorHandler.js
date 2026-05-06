@@ -1,4 +1,4 @@
-const logger = require('../config/logger');
+import logger from '../config/logger.js';
 
 const errorHandler = (err, req, res, next) => {
   logger.error(`${err.message} | ${req.method} ${req.originalUrl}`);
@@ -24,4 +24,4 @@ const notFound = (req, res) => {
   res.status(404).json({ success: false, message: `Route ${req.originalUrl} not found` });
 };
 
-module.exports = { errorHandler, notFound };
+export { errorHandler, notFound };

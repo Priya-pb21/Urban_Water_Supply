@@ -94,7 +94,7 @@ CREATE TABLE IF NOT EXISTS demand (
   quantity     DECIMAL(12, 2) NOT NULL CHECK (quantity > 0),
   priority     INTEGER NOT NULL CHECK (priority BETWEEN 1 AND 10),
   status       VARCHAR(20) DEFAULT 'pending'
-                CHECK (status IN ('pending', 'processed', 'fulfilled', 'partial')),
+                CHECK (status IN ('pending', 'approved', 'processed', 'fulfilled', 'partial')),
   notes        TEXT,
   requested_by UUID REFERENCES users(id) ON DELETE SET NULL,
   timestamp    TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -188,9 +188,105 @@ CREATE TABLE IF NOT EXISTS audit_logs (
   created_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+
+
+-- ============================================
+-- PRIORITY TABLE (defines area type priority)
+-- ============================================
+CREATE TABLE IF NOT EXISTS area_priorities (
+  id SERIAL PRIMARY KEY,
+  area_type VARCHAR(50) NOT NULL UNIQUE,  -- 'hospital', 'fire_station', 'industry', 'residential'
+  priority_rank INT NOT NULL,             -- 1 = highest priority
+  description TEXT
+);
+
+INSERT INTO area_priorities (area_type, priority_rank, description) VALUES
+  ('hospital',      1, 'Medical facilities - critical'),
+  ('government',    2, 'Government and civic services'),
+  ('industrial',    3, 'Industrial zones'),
+  ('commercial',    4, 'Commercial areas'),
+  ('school',        5, 'Schools and education facilities'),
+  ('residential',   6, 'Residential areas')
+ON CONFLICT (area_type) DO UPDATE
+SET
+  priority_rank = EXCLUDED.priority_rank,
+  description = EXCLUDED.description;
+
+-- ============================================
+-- CREDITS TABLE (each area has a credit score)
+-- ============================================
+-- NEW (correct type)
+CREATE TABLE IF NOT EXISTS area_credits (
+  id SERIAL PRIMARY KEY,
+  area_id UUID NOT NULL REFERENCES areas(id) ON DELETE CASCADE,
+  credits INT NOT NULL DEFAULT 50 CHECK (credits BETWEEN 10 AND 100),
+  last_updated TIMESTAMP DEFAULT NOW()
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_area_credits_area_id ON area_credits(area_id);
+
+-- ============================================
+-- Add area_type column to your areas table
+-- (if not already present)
+-- ============================================
+ALTER TABLE areas ADD COLUMN IF NOT EXISTS area_type VARCHAR(50) DEFAULT 'residential';
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1
+    FROM pg_constraint
+    WHERE conname = 'fk_area_type'
+      AND conrelid = 'areas'::regclass
+  ) THEN
+    ALTER TABLE areas ADD CONSTRAINT fk_area_type
+      FOREIGN KEY (area_type) REFERENCES area_priorities(area_type);
+  END IF;
+END;
+$$;
+
+-- ============================================
+-- ALLOCATION LOG TABLE (audit trail)
+-- ============================================
+CREATE TABLE IF NOT EXISTS allocation_log (
+  id SERIAL PRIMARY KEY,
+  run_at TIMESTAMP DEFAULT NOW(),
+  total_supply NUMERIC(12,2),
+  total_demand NUMERIC(12,2),
+  mode VARCHAR(20),  -- 'surplus' or 'deficit'
+  surplus_amount NUMERIC(12,2)
+);
+
+CREATE TABLE IF NOT EXISTS  allocation_log_items (
+  id SERIAL PRIMARY KEY,
+  log_id INT REFERENCES allocation_log(id) ON DELETE CASCADE,
+  area_id UUID REFERENCES areas(id),
+  area_name VARCHAR(100),
+  area_type VARCHAR(50),
+  priority_rank INT,
+  credits INT,
+  demanded NUMERIC(12,2),
+  allocated NUMERIC(12,2),
+  fully_satisfied BOOLEAN
+);
 -- ============================================
 -- INDEXES FOR PERFORMANCE
 -- ============================================
+
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1
+    FROM pg_constraint
+    WHERE conname = 'demand_status_check'
+      AND conrelid = 'demand'::regclass
+  ) THEN
+    ALTER TABLE demand DROP CONSTRAINT demand_status_check;
+  END IF;
+
+  ALTER TABLE demand ADD CONSTRAINT demand_status_check
+    CHECK (status IN ('pending', 'approved', 'processed', 'fulfilled', 'partial'));
+END;
+$$;
 
 -- Users
 CREATE INDEX IF NOT EXISTS idx_users_email       ON users(email);

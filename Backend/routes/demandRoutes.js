@@ -1,8 +1,12 @@
-const express = require('express');
-const { body } = require('express-validator');
-const demandController = require('../controllers.js/demandController');
-const { authenticate, authorize } = require('../middleware/auth');
-const { validate } = require('../middleware/validate');
+import express from 'express';
+import { body } from 'express-validator';
+
+// import all controller functions
+import * as demandController from '../controllers/demandController.js';
+
+// middleware
+import { authenticate, authorize } from '../middleware/auth.js';
+import { validate } from '../middleware/validate.js';
 
 const router = express.Router();
 
@@ -22,6 +26,18 @@ router.post(
   demandController.createDemand
 );
 
-router.put('/:id', authenticate, authorize('admin', 'area_manager'), demandController.updateDemand);
+router.patch(
+  '/:id/approve',
+  authenticate,
+  authorize('admin'),
+  demandController.approveDemand
+);
 
-module.exports = router;
+router.put(
+  '/:id',
+  authenticate,
+  authorize('admin', 'area_manager'),
+  demandController.updateDemand
+);
+
+export default router;

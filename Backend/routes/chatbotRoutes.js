@@ -1,8 +1,8 @@
-const express = require('express');
-const { body } = require('express-validator');
-const { chat } = require('../controllers.js/chatbotController');
-const { authenticate } = require('../middleware/auth');
-const { validate } = require('../middleware/validate');
+import express from 'express';
+import { body } from 'express-validator';
+import { chat } from '../controllers/chatbotController.js';
+import { authenticate } from '../middleware/auth.js';
+import { validate } from '../middleware/validate.js';
 
 const router = express.Router();
 
@@ -31,4 +31,4 @@ router.post(
   chat
 );
 
-module.exports = router;
+export default router;

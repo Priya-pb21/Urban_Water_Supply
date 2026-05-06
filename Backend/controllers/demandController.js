@@ -1,5 +1,5 @@
-const pool = require('../config/db');
-const { auditLog } = require('../middleware/audit');
+import pool from '../config/db.js';
+import { auditLog } from '../middleware/audit.js';
 
 // GET /api/demand
 const getAllDemand = async (req, res, next) => {
@@ -50,14 +50,37 @@ const createDemand = async (req, res, next) => {
       await pool.query('UPDATE areas SET manager_id = $1 WHERE id = $2', [req.user.id, area_id]);
     }
 
+    const initialStatus = req.user.role === 'admin' ? 'approved' : 'pending';
     const result = await pool.query(
-      `INSERT INTO demand (area_id, quantity, priority, notes, requested_by)
-       VALUES ($1, $2, $3, $4, $5) RETURNING *`,
-      [area_id, quantity, priority, notes || null, req.user.id]
+      `INSERT INTO demand (area_id, quantity, priority, notes, requested_by, status)
+       VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
+      [area_id, quantity, priority, notes || null, req.user.id, initialStatus]
     );
 
     await auditLog('CREATE_DEMAND', 'demand', result.rows[0].id, req.user.id, null, result.rows[0], req.ip);
     res.status(201).json({ success: true, message: 'Demand submitted', data: result.rows[0] });
+  } catch (err) { next(err); }
+};
+
+// PATCH /api/demand/:id/approve
+const approveDemand = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+
+    const old = await pool.query('SELECT * FROM demand WHERE id = $1', [id]);
+    if (!old.rows[0]) return res.status(404).json({ success: false, message: 'Demand not found' });
+
+    if (old.rows[0].status !== 'pending') {
+      return res.status(400).json({ success: false, message: 'Only pending demands can be approved' });
+    }
+
+    const result = await pool.query(
+      `UPDATE demand SET status = 'approved' WHERE id = $1 RETURNING *`,
+      [id]
+    );
+
+    await auditLog('APPROVE_DEMAND', 'demand', id, req.user.id, old.rows[0], result.rows[0], req.ip);
+    res.json({ success: true, message: 'Demand approved', data: result.rows[0] });
   } catch (err) { next(err); }
 };
 
@@ -89,9 +112,10 @@ const getDemandSummary = async (req, res, next) => {
     const result = await pool.query(`
       SELECT
         COUNT(*) AS total_requests,
-        SUM(quantity) AS total_demanded,
-        AVG(priority) AS avg_priority,
+        COALESCE(SUM(quantity) FILTER (WHERE status IN ('approved', 'fulfilled', 'partial')), 0) AS total_demanded,
+        AVG(priority) FILTER (WHERE status IN ('approved', 'fulfilled', 'partial')) AS avg_priority,
         COUNT(CASE WHEN status = 'pending' THEN 1 END) AS pending,
+        COUNT(CASE WHEN status = 'approved' THEN 1 END) AS approved,
         COUNT(CASE WHEN status = 'fulfilled' THEN 1 END) AS fulfilled,
         COUNT(CASE WHEN status = 'partial' THEN 1 END) AS partial
       FROM demand
@@ -101,4 +125,4 @@ const getDemandSummary = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
-module.exports = { getAllDemand, createDemand, updateDemand, getDemandSummary };
+export { getAllDemand, createDemand, approveDemand, updateDemand, getDemandSummary };
